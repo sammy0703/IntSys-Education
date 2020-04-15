@@ -1,7 +1,9 @@
 import csv
 import os
-
+import pickle
 import numpy as np
+import random
+import torch
 from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler
 
 
@@ -22,7 +24,11 @@ class SimpleDataset(Dataset):
         # with open('path/to/.csv', 'r') as f:
         #   lines = ...
         ## Look up how to read .csv files using Python. This is common for datasets in projects.
-        pass
+        pkl_file = open(path_to_pkl, 'rb')
+        self.data = pickle.load(pkl_file)
+        pkl_file.close()
+        self.labels = np.fromfile(path_to_labels)
+        ## pass
 
     def __len__(self):
         """__len__ [summary]
@@ -30,7 +36,8 @@ class SimpleDataset(Dataset):
         [extended_summary]
         """
         ## TODO: Returns the length of the dataset.
-        pass
+        return self.labels.shape[0] # will come back to this later
+        ## pass
 
     def __getitem__(self, index):
         """__getitem__ [summary]
@@ -49,13 +56,13 @@ class SimpleDataset(Dataset):
         # if self.transform:
         #   sample = self.transform(sample)
         ## Remember to convert the x and y into torch tensors.
-
-        pass
+        tup_item = (torch.tensor(self.data[index]), torch.tensor(self.labels[index]))
+        return tup_item
 
 
 def get_data_loaders(path_to_pkl, 
                      path_to_labels,
-                     train_val_test=[0.8, 0.2, 0.2], 
+                     train_val_test=[0.8, 0.1, 0.1],
                      batch_size=32):
     """get_data_loaders [summary]
     
@@ -71,19 +78,22 @@ def get_data_loaders(path_to_pkl,
     :rtype: [type]
     """
     # First we create the dataset given the path to the .csv file
-    dataset = SimpleDataset(path_to_csv, path_to_labels)
+    dataset = SimpleDataset(path_to_pkl, path_to_labels)
 
     # Then, we create a list of indices for all samples in the dataset.
     dataset_size = len(dataset)
     indices = list(range(dataset_size))
+    random.shuffle(indices)
 
     ## TODO: Rewrite this section so that the indices for each dataset split
     ## are formed. You can take your code from last time
 
     ## BEGIN: YOUR CODE
-    train_indices = []
-    val_indices = []
-    test_indices = []
+    t_inds = train_val_test[0]*len(dataset)
+    v_inds = t_inds + train_val_test[1]*len(dataset)
+    train_indices = indices[:t_inds]
+    val_indices = indices[t_inds:v_inds]
+    test_indices = indices[v_inds:]
     ## END: YOUR CODE
 
     # Now, we define samplers for each of the train, val and test data
